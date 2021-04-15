@@ -9,7 +9,7 @@ from datetime import datetime
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 csrf = CSRFProtect()
-db = SQLAlchemy(app)
+db = SQLAlchemy()
 salt = bcrypt.gensalt(rounds=16)
 
 app = Flask(__name__, template_folder='templates')
@@ -125,6 +125,5 @@ def signUp():
         return render_template("create_acc.html")
 
 if __name__ == "__main__":
-    db.drop_all()
     context = ('cert.pem','key.pem')
     app.run(ssl_context=context, debug=True)
