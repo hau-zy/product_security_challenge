@@ -36,8 +36,14 @@ class Users(db.Model):
         self.login_tries = login_tries
         self.last_login = last_login
 
-def sanitizeUserInput(input) :
-    return html.escape(input)
+def htmlSafe(text) :
+    return html.escape(text)
+
+def isUsernameSafe(username) :
+    if re.match(r"^[a-zA-Z0-9 .-]+$", username) :
+        return True
+    else :
+        return False
 
 def isCommonPwd(pwd, file = '10k-most-common.txt') :
     with open('10k-most-common.txt') as f:
@@ -84,22 +90,34 @@ def pwdCheck(pwd):
 def login():
     if request.method == "POST":
         username = request.form.get("username")
-        password = sanitizeUserInput(request.form.get("password"))
-        # implement checks
-        return render_template("login.html")
+        password = request.form.get("password")
+        # check safe username
+        if isUsernameSafe(username) :
+            # perform user check on db
+            user = Users.query.filter_by(username=username).first()
+            current_time = int(datetime.now().timestamp())
+            # TODO: further checks before login
+            return render_template("login.html")
+        else:
+            flash("Bad Username: Please try again")
+            return render_template("login.html")
     else:
         return render_template("login.html")
 
 @app.route("/create_acc", methods=["POST", "GET"])
 def signUp():
     if request.method == "POST":
-            username = sanitizeUserInput(request.form.get("username"))
-            password1 = sanitizeUserInput(request.form.get("password1"))
-            password2 = sanitizeUserInput(request.form.get("password2"))
+            username = request.form.get("username")
+            password1 = request.form.get("password1")
+            password2 = request.form.get("password2")
+            # check safe username
+            if not isUsernameSafe(username) :
+                flash("Bad Username: Please try again")
+                return render_template("create_acc.html") 
             # check username does not exist
             user = Users.query.filter_by(username=username).first()
             if user :
-                flash("Bad User: Please try again")
+                flash("Bad Username: Please try again")
                 return render_template("create_acc.html")
 
             # passwords should match
