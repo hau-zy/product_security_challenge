@@ -1,3 +1,4 @@
 .env
 *.pem
 .DS_Store
+auth_service.log
