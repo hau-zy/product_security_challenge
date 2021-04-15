@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}
+Signup Form
+{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" type="text/css" href="assets/main.css">
+{% endblock %}
+
+{% block content %}
+<div class="signup-form">
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <div class="alert alert-danger" role="alert">
+        {{ messages[0] }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    {% endif %}
+    {% endwith %}
+    <form action="" method="post">
+        <h2 class="text-center">Sign up</h2>
+        <div class="form-group">
+            <input type="text" name="username" class="form-control" placeholder="Username" required="required">
+        </div>
+        <div class="form-group">
+            <input type="password" name="password1" class="form-control" placeholder="Password" required="required">
+        </div>
+        <div class="form-group">
+            <input type="password" name="password2" class="form-control" placeholder="Confirm Password" required="required">
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary btn-block">Sign up</button>
+        </div>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    </form>
+    <p class="text-center"><a href="/">Sign In to Existing Account</a></p>
+</div>
+{% endblock %}
