@@ -7,14 +7,14 @@
 From browser visit `https://localhost:5000`
     
 ## Functionalities
-- [] Input sanitization and validation
-- [] Password hashed
-- [] Prevention of timing attacks
-- [] Logging
+- [ ] Input sanitization and validation
+- [ ] Password hashed
+- [ ] Prevention of timing attacks
+- [ ] Logging
 - [x] CSRF prevention
-- [] Multi factor authentication
-- [] Password reset / forget password mechanism
-- [] Account lockout
-- [] Cookie
+- [ ] Multi factor authentication
+- [ ] Password reset / forget password mechanism
+- [ ] Account lockout
+- [ ] Cookie
 - [x] HTTPS
 - [x] Known password check
