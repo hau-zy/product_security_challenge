@@ -10,7 +10,6 @@ dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 csrf = CSRFProtect()
 db = SQLAlchemy()
-salt = bcrypt.gensalt(rounds=16)
 
 app = Flask(__name__, template_folder='templates')
 app.config["SECRET_KEY"] = os.environ.get("APP_SECRET_KEY")
@@ -22,13 +21,15 @@ db.init_app(app)
 class Users(db.Model):
     id = db.Column("id", db.Integer, primary_key=True) 
     username = db.Column(db.String(30))
-    password = db.Column(db.String(64))
+    password = db.Column(db.String(100))
+    salt =  db.Column(db.String(100))
     login_tries = db.Column(db.Integer)
     last_login = db.Column(db.Integer)
 
-    def __init__(self, name, password, login_tries, last_login):
+    def __init__(self, name, password, salt, login_tries, last_login):
         self.name = name
         self.password = password
+        self.salt = salt
         self.login_tries = login_tries
         self.last_login = last_login
 
@@ -108,7 +109,8 @@ def signUp():
             if res['password_ok'] :
                 hashed_password = bcrypt.hashpw(password1.encode(), salt)
                 current_time = int(datetime.now().timestamp())
-                new_user = Users(username, hashed_password, 0, current_time)
+                salt = bcrypt.gensalt(rounds=16)
+                new_user = Users(username, hashed_password, salt, 0, current_time)
                 db.session.add(new_user)
                 db.session.commit()
                 flash("Your account is successfully created!", "info")
