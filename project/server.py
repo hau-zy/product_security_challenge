@@ -9,7 +9,7 @@ from datetime import datetime
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 csrf = CSRFProtect()
-db = SQLAlchemy()
+
 
 logging.basicConfig(filename='auth_service.log', level=logging.DEBUG, 
     format='%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
@@ -19,7 +19,7 @@ app.config["SECRET_KEY"] = os.environ.get("APP_SECRET_KEY")
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.environ.get("DATABASE")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 csrf.init_app(app)
-db.init_app(app)
+db = SQLAlchemy(app)
 
 class Users(db.Model):
     id = db.Column("id", db.Integer, primary_key=True) 
@@ -29,8 +29,8 @@ class Users(db.Model):
     login_tries = db.Column(db.Integer)
     last_login = db.Column(db.Integer)
 
-    def __init__(self, name, password, salt, login_tries, last_login):
-        self.name = name
+    def __init__(self, username, password, salt, login_tries, last_login):
+        self.username = username
         self.password = password
         self.salt = salt
         self.login_tries = login_tries
@@ -128,9 +128,10 @@ def signUp():
             # password check
             res = pwdCheck(password1)
             if res['password_ok'] :
+                salt = bcrypt.gensalt(rounds=16)
                 hashed_password = bcrypt.hashpw(password1.encode(), salt)
                 current_time = int(datetime.now().timestamp())
-                salt = bcrypt.gensalt(rounds=16)
+                print(username,hashed_password,salt,current_time)
                 new_user = Users(username, hashed_password, salt, 0, current_time)
                 db.session.add(new_user)
                 db.session.commit()
@@ -148,5 +149,7 @@ def signUp():
         return render_template("create_acc.html")
 
 if __name__ == "__main__":
+    # db.drop_all()
+    db.create_all()
     context = ('cert.pem','key.pem')
     app.run(ssl_context=context, debug=True)
