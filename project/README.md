@@ -3,7 +3,7 @@
 - `source env/bin/activate`
 
 2. Set up `.env` environment variables
-- run `cp .env_sample .env` and edit the environment variables in `.env`.
+- run `cp .env_sample .env` and edit the environment variables in `.env` file.
 
 3. Generate SSL certs (you need to have openssl installed)
 - `openssl req -x509 -newkey rsa:4096 -nodes -out cert.pem -keyout key.pem -days 365`
@@ -19,14 +19,17 @@
     - username input validation to prevent injection
 - [x] Password hashed
     - bcrypt with random salt for each user
-- [ ] Prevention of timing attacks
-- [ ] Logging
+- [X] Prevention of timing attacks
+    - Random sleep time between 0-1.5s before login result is returned back to user
+- [X] Logging
 - [x] CSRF prevention
     - implemented with `flask_wtf.csrf`
 - [ ] Multi factor authentication
 - [ ] Password reset / forget password mechanism
-- [ ] Account lockout
-- [ ] Cookie
+- [X] Account lockout
+    - account is locked out for 5min after 5 wrong password attempts
+- [X] Cookie
+    - JSON Web Tokens stored as `auth_cookie`
 - [x] HTTPS
     - self-signed certificate
 - [x] Known password check
