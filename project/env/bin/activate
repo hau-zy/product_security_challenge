@@ -37,7 +37,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="/Users/hauzy.aaron/Desktop/zendesk_prodsec/product_security_challenge/env"
+VIRTUAL_ENV="/Users/hauzy.aaron/Desktop/zendesk_prodsec/product_security_challenge/project/env"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
