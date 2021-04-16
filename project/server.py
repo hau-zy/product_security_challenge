@@ -22,12 +22,15 @@ csrf.init_app(app)
 db = SQLAlchemy(app)
 
 class Users(db.Model):
+    ''' Models '''
+    __tablename__ = "users"
     id = db.Column("id", db.Integer, primary_key=True) 
     username = db.Column(db.String(30))
     password = db.Column(db.String(100))
     salt =  db.Column(db.String(100))
     login_tries = db.Column(db.Integer)
     last_login = db.Column(db.Integer)
+    lock_time = db.Column(db.Integer)
 
     def __init__(self, username, password, salt, login_tries, last_login):
         self.username = username
