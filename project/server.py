@@ -205,7 +205,6 @@ def login():
                     sleep(random.uniform(0, 0.5))
                     try:
                         auth_token = encode_auth_token(user.id)
-                        print(auth_token)
                         if auth_token:
                             user.login_tries = 0
                             user.last_login = int(datetime.now().timestamp())
@@ -259,7 +258,6 @@ def signUp():
             if res['password_ok'] :
                 salt = bcrypt.gensalt(rounds=16)
                 hashed_password = bcrypt.hashpw(password1.encode(), salt)
-                #print(username,hashed_password,salt,current_time)
                 new_user = Users(username, hashed_password, salt, 0, 0, 0)
                 db.session.add(new_user)
                 db.session.commit()
@@ -278,7 +276,6 @@ def signUp():
 
 @app.route("/dashboard", methods=["GET"])
 def dashboard():
-    print("dashboard")
     auth_token = request.cookies.get('auth')
     if auth_token is None or RevokedTokens.query.filter_by(revoked_token=auth_token).first():
         g.user = None
