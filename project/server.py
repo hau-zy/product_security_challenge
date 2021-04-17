@@ -1,4 +1,4 @@
-import os, html, re, bcrypt, logging, jwt , random, hashlib
+import os, re, bcrypt, logging, jwt , random, hashlib
 from dotenv import load_dotenv
 from os.path import join, dirname
 from flask import Flask, redirect, url_for, render_template, request, flash, make_response, jsonify, g
@@ -10,7 +10,6 @@ from time import sleep
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 csrf = CSRFProtect()
-
 
 logging.basicConfig(filename='auth_service.log', level=logging.DEBUG, 
     format='%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
@@ -165,6 +164,10 @@ def decode_auth_token(auth_token):
 
 
 """ Routes """
+
+"""
+Login Page
+"""
 @app.route("/", methods=["POST", "GET"])
 def login():
     if request.method == "POST":
@@ -232,6 +235,9 @@ def login():
     else:
         return render_template("login.html")
 
+"""
+Create Account Page
+"""
 @app.route("/create_acc", methods=["POST", "GET"])
 def signUp():
     if request.method == "POST":
@@ -274,6 +280,9 @@ def signUp():
     else:
         return render_template("create_acc.html")
 
+"""
+User Dashboard (after login) Page
+"""
 @app.route("/dashboard", methods=["GET"])
 def dashboard():
     auth_token = request.cookies.get('auth')
@@ -291,6 +300,9 @@ def dashboard():
             flash(res, "error")
             return redirect(url_for("login"))
 
+"""
+End-point that handles logout logic
+"""
 @app.route("/logout", methods=["GET"])
 def logout():
     #print("logout")
@@ -306,6 +318,9 @@ def logout():
         flash("Successfully Logged Out", "success")
         return redirect(url_for("login"))
 
+"""
+Reset Password Page
+"""
 @app.route("/reset_pwd", methods=["POST", "GET"])
 def resetPwd():
     if request.method == "POST":
@@ -356,7 +371,12 @@ def resetPwd():
                             user.salt = salt
                             user.password = hashed_password
                             db.session.commit()
-                            flash("Your password is successfully resetted!", "success")
+                            auth_token = request.cookies.get('auth').strip()
+                            if auth_token is not None :
+                                new_revoke = RevokedTokens(auth_token, int(datetime.now().timestamp()))
+                                db.session.add(new_revoke)
+                                db.session.commit()
+                            flash("Your password is successfully resetted! Please log in again.", "success")
                             app.logger.warning("Password reset successful for : " + user.username)
                             return redirect(url_for("login"))
                         else :
@@ -366,13 +386,13 @@ def resetPwd():
                                 flash('Password must be between 8 to 64 characters with at least 1 Digit, 1 Upper Case Alphabet, 1 Lower Case Alphabet and 1 Special Character' , "error")
                             return render_template("reset.html")
                 else :
-                    # no such user
+                    #no such user
                     flash("Please try again", "error")
                     app.logger.warning("[pwd_reset]User does not exist : " + username)
                     sleep(random.uniform(4, 4.5)) # padded time to take into account hashing time for bcrypt
                     return redirect(url_for("resetPwd"))
             else :
-                # unsafe username
+                #unsafe username
                 flash("Please try again", "error")
                 app.logger.warning("[pwd_reset]Unsafe username provided : " + username)
                 sleep(random.uniform(4, 4.5)) # padded time to take into account hashing time for bcrypt
