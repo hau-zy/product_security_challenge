@@ -2,9 +2,6 @@
     width: 340px;
     margin: 50px auto;
 }
-.main {
-    margin: 10;
-}
 
 .login-form form {
     margin-bottom: 15px;
@@ -26,4 +23,8 @@
 .btn {
     font-size: 15px;
     font-weight: bold;
+}
+
+.dashboard {
+    margin: 10;
 }

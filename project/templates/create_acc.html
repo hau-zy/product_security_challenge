@@ -9,8 +9,17 @@ Create Account
 {% endblock %}
 
 {% block content %}
-<div class="signup-form">
-    {% with messages = get_flashed_messages() %}
+{% with messages = get_flashed_messages(category_filter=['success']) %}
+    {% if messages %}
+    <div class="alert alert-success" role="alert">
+        {{ messages[0] }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    {% endif %}
+    {% endwith %}
+    {% with messages = get_flashed_messages(category_filter=['error']) %}
     {% if messages %}
     <div class="alert alert-danger" role="alert">
         {{ messages[0] }}
@@ -19,7 +28,8 @@ Create Account
         </button>
     </div>
     {% endif %}
-    {% endwith %}
+{% endwith %}
+<div class="login-form">
     <form action="" method="post">
         <h2 class="text-center">Sign up</h2>
         <div class="form-group">
@@ -36,6 +46,6 @@ Create Account
         </div>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     </form>
-    <p class="text-center"><a href="/">Sign In to Existing Account</a></p>
+    <p class="text-center"><a href="/">Log In to Existing Account</a></p>
 </div>
 {% endblock %}

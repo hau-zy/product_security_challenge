@@ -9,8 +9,7 @@ Login Form
 {% endblock %}
 
 {% block content %}
-<div class="login-form">
-    {% with messages = get_flashed_messages(category_filter=['success']) %}
+{% with messages = get_flashed_messages(category_filter=['success']) %}
     {% if messages %}
     <div class="alert alert-success" role="alert">
         {{ messages[0] }}
@@ -29,9 +28,10 @@ Login Form
         </button>
     </div>
     {% endif %}
-    {% endwith %}
+{% endwith %}
+<div class="login-form">
     <form action="" method="post">
-        <h2 class="text-center">Log in</h2>
+        <h2 class="text-center">Log In</h2>
         <div class="form-group">
             <input type="text" name="username" class="form-control" placeholder="Username" required="required">
         </div>
