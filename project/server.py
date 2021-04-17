@@ -236,7 +236,7 @@ def signUp():
             password2 = request.form.get("password2")
             # check safe username
             if not isUsernameSafe(username) or len(username) > 30 :
-                flash("Username should contain only Alpha-numeric characters and hypens and length no more than 30 characters")
+                flash("Username should contain only Alpha-numeric characters and hypens and length no more than 30 characters", "error")
                 return redirect(url_for("signUp"))
             # check username does not exist
             user = Users.query.filter_by(username=username).first()
@@ -246,7 +246,7 @@ def signUp():
 
             # passwords should match
             if password1 != password2 :
-                flash("Password Input Do Not Match")
+                flash("Passwords do not matchh", "error")
                 return redirect(url_for("signUp"))
             
             # password check
@@ -254,7 +254,6 @@ def signUp():
             if res['password_ok'] :
                 salt = bcrypt.gensalt(rounds=16)
                 hashed_password = bcrypt.hashpw(password1.encode(), salt)
-                current_time = int(datetime.now().timestamp())
                 #print(username,hashed_password,salt,current_time)
                 new_user = Users(username, hashed_password, salt, 0, 0, 0)
                 db.session.add(new_user)
