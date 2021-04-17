@@ -5,11 +5,11 @@ Dashboard
 {% endblock %}
 
 {% block head %}
-<link rel="stylesheet" type="text/css" href="assets/main.css">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/main.css')}}">
 {% endblock %}
 
 {% block content %}
-<div class="login-form">
+<div class="main">
     {% with messages = get_flashed_messages(category_filter=['success']) %}
     {% if messages %}
     <div class="alert alert-success" role="alert">
@@ -30,7 +30,9 @@ Dashboard
     </div>
     {% endif %}
     {% endwith %}
-    <h1>Welcome {{g.user['username']}}</h1>
+    <h1>Welcome {{g.user['username']}} 👋 </h1>
+    <p>Hello! Welcome to the demo! 🤓 @hau-zy</p>
+    <p class="text-center"><a href="/reset_pwd">Reset Password</a></p>
     <p class="text-center"><a href="/logout">Logout</a></p>
 </div>
 {% endblock %}
