@@ -1,4 +1,4 @@
-import os, html, re, bcrypt, logging, jwt , random
+import os, html, re, bcrypt, logging, jwt , random, hashlib
 from dotenv import load_dotenv
 from os.path import join, dirname
 from flask import Flask, redirect, url_for, render_template, request, flash, make_response, jsonify, g
@@ -51,6 +51,18 @@ class RevokedTokens(db.Model) :
         self.revoked_token = revoked_token
         self.revoked_time = revoked_time
 
+def md5(fname):
+    """
+    Helper function to get md5 hash checksum of a file
+    Return: String
+    """
+    hash_md5 = hashlib.md5()
+    with open(fname, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    print(hash_md5.hexdigest())
+    return hash_md5.hexdigest()
+
 def isUsernameSafe(username) :
     """
     Checks if username provided follows the rule : alpha-numeric and '-'
@@ -61,17 +73,20 @@ def isUsernameSafe(username) :
     else :
         return False
 
-def isCommonPwd(pwd, file = '10k-most-common.txt') :
+def isCommonPwd(pwd) :
     """
     Helper function to check for common password from a txt file
     Returns : Boolean
     """
-    with open('10k-most-common.txt') as f:
+    file = '10k-most-common.txt'
+    assert md5(file), "0efee504c93d65b37a267005657a7785"
+    with open(file) as f:
         common_pwd = [line.rstrip() for line in f]
     if pwd in common_pwd :
         return True
     else :
         return False
+    
 
 def pwdCheck(pwd):
     """
@@ -136,10 +151,8 @@ def decode_auth_token(auth_token):
     :return: integer|string
     """
     try:
-        print("decode",auth_token)
         payload = jwt.decode(auth_token, os.environ.get("JWT_SECRET_KEY"), algorithm='HS256',
         options={"verify_signature": False})
-        print(payload)
         return payload['sub']
     except jwt.ExpiredSignatureError:
         return 'Signature expired. Please log in again.'
@@ -174,17 +187,17 @@ def login():
                         app.logger.warning("Account for : " + user.username)
                         user.lock_time = int(datetime.now().timestamp())
                         db.session.commit()
-                        sleep(random.uniform(0, 1.5))
+                        sleep(random.uniform(0, 0.5))
                         return redirect(url_for("login"))
                     else:   
                         flash('Please try again', "error")
                         app.logger.warning("Wrong password provided for : " + user.username)
                         db.session.commit()
-                        sleep(random.uniform(0, 1.5))
+                        sleep(random.uniform(0, 0.5))
                         return redirect(url_for("login"))
                 else : 
                     # correct password provided
-                    sleep(random.uniform(0, 1.5))
+                    sleep(random.uniform(0, 0.5))
                     try:
                         auth_token = encode_auth_token(user.id)
                         print(auth_token)
@@ -204,13 +217,13 @@ def login():
                 # no such user
                 flash("Please try again", "error")
                 app.logger.warning("User does not exist : " + username)
-                sleep(random.uniform(4, 5.5)) # padded time to take into account hashing time for bcrypt
+                sleep(random.uniform(4, 4.5)) # padded time to take into account hashing time for bcrypt
                 return redirect(url_for("login"))
         else:
             # unsafe username
             flash("Please try again", "error")
             app.logger.warning("Unsafe username provided : " + username)
-            sleep(random.uniform(4, 5.5)) # padded time to take into account hashing time for bcrypt
+            sleep(random.uniform(4, 4.5)) # padded time to take into account hashing time for bcrypt
             return redirect(url_for("login"))
     else:
         return render_template("login.html")
@@ -242,7 +255,7 @@ def signUp():
                 salt = bcrypt.gensalt(rounds=16)
                 hashed_password = bcrypt.hashpw(password1.encode(), salt)
                 current_time = int(datetime.now().timestamp())
-                print(username,hashed_password,salt,current_time)
+                #print(username,hashed_password,salt,current_time)
                 new_user = Users(username, hashed_password, salt, 0, 0, 0)
                 db.session.add(new_user)
                 db.session.commit()
@@ -281,9 +294,9 @@ def dashboard():
 
 @app.route("/logout", methods=["GET"])
 def logout():
-    print("logout")
+    #print("logout")
     auth_token = request.cookies.get('auth').strip()
-    print(auth_token)
+    #print(auth_token)
     if auth_token is None or RevokedTokens.query.filter_by(revoked_token=auth_token).first():
         flash("Please log in", "error")
         return redirect(url_for("login"))
