@@ -189,14 +189,14 @@ def login():
                     user.login_tries += 1
                     if user.login_tries == 5 :
                         flash('Account Locked For 5min', "error")
-                        app.logger.warning("Account for : " + user.username)
+                        app.logger.warning("[login]Account for : " + user.username)
                         user.lock_time = int(datetime.now().timestamp())
                         db.session.commit()
                         sleep(random.uniform(0, 0.5))
                         return redirect(url_for("login"))
                     else:   
                         flash('Please try again', "error")
-                        app.logger.warning("Wrong password provided for : " + user.username)
+                        app.logger.warning("[login]Wrong password provided for : " + user.username)
                         db.session.commit()
                         sleep(random.uniform(0, 0.5))
                         return redirect(url_for("login"))
@@ -221,7 +221,7 @@ def login():
             else :
                 # no such user
                 flash("Please try again", "error")
-                app.logger.warning("User does not exist : " + username)
+                app.logger.warning("[login]User does not exist : " + username)
                 sleep(random.uniform(4, 4.5)) # padded time to take into account hashing time for bcrypt
                 return redirect(url_for("login"))
         else:
@@ -246,7 +246,7 @@ def signUp():
             # check username does not exist
             user = Users.query.filter_by(username=username).first()
             if user :
-                flash("Bad Username: Please try again", "error")
+                flash("Please try again (User Exists)", "error")
                 return redirect(url_for("signUp"))
 
             # passwords should match
@@ -308,6 +308,80 @@ def logout():
         db.session.commit()
         flash("Successfully Logged Out", "success")
         return redirect(url_for("login"))
+
+@app.route("/reset_pwd", methods=["POST", "GET"])
+def resetPwd():
+    if request.method == "POST":
+            username = request.form.get("username")
+            old_pass = request.form.get("password0")
+            password1 = request.form.get("password1")
+            password2 = request.form.get("password2")
+            # check safe username
+            if isUsernameSafe(username) :
+                # perform user check on db
+                user = Users.query.filter_by(username=username).first() 
+                if user :
+                    # check if account is locked out 
+                    if user.login_tries > 5  and current_time - user.lock_time < (5*60) :
+                        flash('[pwd_reset]User Account is Locked Out for ' + str(user.lock_time + (5*60) - current_time) + ' sec', "error")
+                        return redirect(url_for("resetPwd"))
+                    
+                    # check password provided vs stored
+                    hash_prov_passwd = bcrypt.hashpw(old_pass.encode(), user.salt)
+                    if not hash_prov_passwd == user.password :
+                        # wrong password provided
+                        user.login_tries += 1
+                        if user.login_tries == 5 :
+                            flash('Account Locked For 5min', "error")
+                            user.lock_time = int(datetime.now().timestamp())
+                            db.session.commit()
+                            sleep(random.uniform(0, 0.5))
+                            return redirect(url_for("resetPwd"))
+                        else:   
+                            flash('Please try again', "error")
+                            app.logger.warning("[pwd_reset]Wrong password provided for : " + user.username)
+                            db.session.commit()
+                            sleep(random.uniform(0, 0.5))
+                            return redirect(url_for("resetPwd"))
+                    else : 
+                        # correct password provided
+                        user.login_tries = 0
+                        # passwords should match
+                        if password1 != password2 :
+                            flash("Passwords do not matchh", "error")
+                            return redirect(url_for("resetPwd"))
+                        
+                        # password check
+                        res = pwdCheck(password1)
+                        if res['password_ok'] :
+                            salt = bcrypt.gensalt(rounds=16)
+                            hashed_password = bcrypt.hashpw(password1.encode(), salt)
+                            user.salt = salt
+                            user.password = hashed_password
+                            db.session.commit()
+                            flash("Your password is successfully resetted!", "success")
+                            app.logger.warning("Password reset successful for : " + user.username)
+                            return redirect(url_for("login"))
+                        else :
+                            if res['common_pwd'] :
+                                flash('Password chosen is too common, please use something more difficult to guess!', "error")
+                            else:
+                                flash('Password must be between 8 to 64 characters with at least 1 Digit, 1 Upper Case Alphabet, 1 Lower Case Alphabet and 1 Special Character' , "error")
+                            return render_template("reset.html")
+                else :
+                    # no such user
+                    flash("Please try again", "error")
+                    app.logger.warning("[pwd_reset]User does not exist : " + username)
+                    sleep(random.uniform(4, 4.5)) # padded time to take into account hashing time for bcrypt
+                    return redirect(url_for("resetPwd"))
+            else :
+                # unsafe username
+                flash("Please try again", "error")
+                app.logger.warning("[pwd_reset]Unsafe username provided : " + username)
+                sleep(random.uniform(4, 4.5)) # padded time to take into account hashing time for bcrypt
+                return redirect(url_for("resetPwd"))
+    else:
+        return render_template("reset_pwd.html")
 
 if __name__ == "__main__":
     #db.drop_all()
