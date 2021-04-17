@@ -16,21 +16,22 @@
     
 ## Functionalities
 - [x] Input sanitization and validation
-    - username input validation to prevent injection
+    - Username input validation to prevent injection
 - [x] Password hashed
-    - bcrypt with random salt for each user
+    - Passwords are hashed using bcrypt with random salt for each user. Unique salt for each user as well as the use of cost factor would increase the effort for a malicious actor to perform offline dictionary attack.
 - [X] Prevention of timing attacks
-    - Random sleep time between 0-1.5s before login result is returned back to user
+    - Random sleep time added before login result is returned back to user. Timing for both correct and incorrect login takes roughly the same time to prevent malicious actors from guessing password with timing attacks.
 - [X] Logging
+    - Logging of login attempts (successful and unsuccessful) is implemented with `logging` library.
 - [x] CSRF prevention
-    - implemented with `flask_wtf.csrf`
+    - Implemented with `flask_wtf.csrf`. 
 - [ ] Multi factor authentication
 - [ ] Password reset / forget password mechanism
 - [X] Account lockout
-    - account is locked out for 5min after 5 wrong password attempts
+    - Account is locked out for 5min after 5 wrong password attempts.
 - [X] Cookie
-    - JSON Web Tokens stored as `auth_cookie`
+    - JSON Web Tokens (JWT) stored as `auth` cookie.
 - [x] HTTPS
-    - self-signed certificate
+    - Self-signed certificate is used.
 - [x] Known password check
-    - checked against Top 10000 password from [SecList](https://github.com/danielmiessler/SecLists/blob/master/Passwords/Common-Credentials/10k-most-common.txt)
+    - Passwords are checked against Top 10000 password from [SecList](https://github.com/danielmiessler/SecLists/blob/master/Passwords/Common-Credentials/10k-most-common.txt) before they are accepted as account password.
