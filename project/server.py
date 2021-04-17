@@ -60,7 +60,6 @@ def md5(fname):
     with open(fname, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
             hash_md5.update(chunk)
-    print(hash_md5.hexdigest())
     return hash_md5.hexdigest()
 
 def isUsernameSafe(username) :
@@ -130,17 +129,20 @@ def encode_auth_token(user_id):
     Generates the Auth Token
     :return: string
     """
-    try:
-        payload = {
-            'exp': datetime.utcnow() + timedelta(days=0, seconds=3600),
-            'iat': datetime.utcnow(),
-            'sub': user_id
+    jwt_secret = os.environ.get("JWT_SECRET_KEY")
+
+    payload = {
+        'exp': datetime.utcnow() + timedelta(days=0, seconds=3600),
+        'iat': datetime.utcnow(),
+        'sub': user_id
         }
-        return jwt.encode(
+    try:
+        token = jwt.encode(
             payload,
-            os.environ.get("JWT_SECRET_KEY"),
+            jwt_secret,
             algorithm='HS256'
         )
+        return token
     except Exception as e:
         return e
 
@@ -150,14 +152,17 @@ def decode_auth_token(auth_token):
     :param auth_token:
     :return: integer|string
     """
+    jwt_secret = os.environ.get("JWT_SECRET_KEY")
+
     try:
-        payload = jwt.decode(auth_token, os.environ.get("JWT_SECRET_KEY"), algorithm='HS256',
-        options={"verify_signature": False})
+        payload = jwt.decode(auth_token, jwt_secret, algorithms=['HS256'],
+        options={"verify_signature": True})
         return payload['sub']
     except jwt.ExpiredSignatureError:
         return 'Signature expired. Please log in again.'
     except jwt.InvalidTokenError:
         return 'Invalid token. Please log in again.'
+
 
 """ Routes """
 @app.route("/", methods=["POST", "GET"])
@@ -275,14 +280,12 @@ def signUp():
 def dashboard():
     print("dashboard")
     auth_token = request.cookies.get('auth')
-    print(auth_token)
     if auth_token is None or RevokedTokens.query.filter_by(revoked_token=auth_token).first():
         g.user = None
         flash("Please log in", "error")
         return redirect(url_for("login"))
     else:
         res = decode_auth_token(auth_token)
-        print(res)
         if isinstance(res, int) :
             g.user = Users.query.filter_by(id=res).first()
             return render_template("dashboard.html")
