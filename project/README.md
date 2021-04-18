@@ -26,12 +26,19 @@
 1. Run Binary `server.exe`
 
 2. Web App
-- From browser visit `https://localhost:5000`. You will need to allow self-signed certificate.
+    - From browser visit `https://localhost:5000`. You will need to allow self-signed certificate.
+    - The database is empty and you would be required to sign up for an account first!
 
-    
 ## Functionalities
 - [x] Input sanitization and validation
     - Username input validation to prevent injection.
+    - Password Complexity is checked against NIST Password Guidelines:
+        1. Password length of more than 8 characters and less than 64 characters
+        2. Includes:
+            - at least 1 Uppercase Alphabet
+            - at least 1 Lowercase Alphabet
+            - at least 1 Digit
+            - at least 1 Special Character
 - [x] Password hashed
     - Passwords are hashed using bcrypt with random salt for each user. Unique salt for each user as well as the use of cost factor would increase the effort for a malicious actor to perform offline dictionary attack.
 - [X] Prevention of timing attacks
@@ -40,9 +47,10 @@
     - Logging of login attempts (successful and unsuccessful) is implemented with `logging` library.
 - [x] CSRF prevention
     - Implemented with `flask_wtf.csrf`. 
-- [ ] Multi-factor authentication
+- [X] Multi-factor authentication
+    - Two-factor authentication is implemented by using a Time-based One Time Password [(TOTP)](https://en.wikipedia.org/wiki/Time-based_One-Time_Password), with the token being provided using Google Authenticator (or any free TOTP service). Acknowledgment : Referencing [Miguel Grinber's blog](https://blog.miguelgrinberg.com/post/two-factor-authentication-with-flask)
 - [X] Password reset / forget password mechanism
-    - Password reset functionality is implemented with user providing existing password as authentication of user. However, for Forget Password, multi-factor authentication is required to verify that the password change is initated by the user.
+    - Password reset functionality is implemented with user providing OTP, using a two-factor authentication to prevent as a way of verifying that the User initated the password change. (It would be better if there is a notification to user, informing them about such change request.)
 - [X] Account lockout
     - Account is locked out for 5min after 5 wrong password attempts.
 - [X] Cookie
@@ -52,3 +60,9 @@
     - Added option to use `ssl_context=adhoc`. Not recommended.
 - [x] Known password check
     - Passwords are checked against Top 10000 password from [SecList](https://github.com/danielmiessler/SecLists/blob/master/Passwords/Common-Credentials/10k-most-common.txt) before they are accepted as account password.
+
+## Test
+- Running test
+    - run `pytest`
+- Additional Note:
+    - Test coverage is not complete
