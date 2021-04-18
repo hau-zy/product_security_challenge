@@ -3,3 +3,6 @@
 .DS_Store
 auth_service.log
 *.db
+__pycache__
+.pytest_cache
+.coverage
