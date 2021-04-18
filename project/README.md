@@ -25,13 +25,13 @@
     - Logging of login attempts (successful and unsuccessful) is implemented with `logging` library.
 - [x] CSRF prevention
     - Implemented with `flask_wtf.csrf`. 
-- [ ] Multi factor authentication
+- [ ] Multi-factor authentication
 - [X] Password reset / forget password mechanism
     - Password reset functionality is implemented with user providing existing password as authentication of user. However, for Forget Password, multi-factor authentication is required to verify that the password change is initated by the user.
 - [X] Account lockout
     - Account is locked out for 5min after 5 wrong password attempts.
 - [X] Cookie
-    - JSON Web Tokens (JWT) stored as `auth` cookie.
+    - JSON Web Tokens (JWT) stored as `auth` cookie. Prevents tampering with token signing. Replay attack can also be mitigated by setting expiry.
 - [x] HTTPS
     - Self-signed certificate is used.
 - [x] Known password check
