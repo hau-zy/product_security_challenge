@@ -6,3 +6,6 @@ auth_service.log
 __pycache__
 .pytest_cache
 .coverage
+/dist
+/build
+server.spec
