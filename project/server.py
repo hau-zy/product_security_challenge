@@ -72,15 +72,25 @@ def isUsernameSafe(username) :
     else :
         return False
 
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.environ.get("_MEIPASS2",os.path.abspath("."))
+
+    return os.path.join(base_path, relative_path)
+
 def isCommonPwd(pwd) :
     """
     Helper function to check for common password from a txt file
     Param: Password to check
     Return: Boolean
     """
-    file = './10k-most-common.txt'
-    assert md5(file) == "0efee504c93d65b37a267005657a7785", "file hash does not match"
-    with open(file) as f:
+    file = '10k-most-common.txt'
+    assert md5(resource_path(file)) == "0efee504c93d65b37a267005657a7785", "file hash does not match"
+    with open(resource_path(file)) as f:
         common_pwd = [line.rstrip() for line in f]
     if pwd in common_pwd :
         return True
@@ -237,7 +247,12 @@ def login():
             sleep(random.uniform(4, 4.5)) # padded time to take into account hashing time for bcrypt
             return redirect(url_for("login"))
     else:
-        return render_template("login.html")
+        auth_token = request.cookies.get('auth')
+        if auth_token is None or RevokedTokens.query.filter_by(revoked_token=auth_token).first():
+            return render_template("login.html")
+        else:
+            return redirect(url_for("dashboard"))
+            
 
 """
 Create Account Page
@@ -409,4 +424,4 @@ if __name__ == "__main__":
     db.create_all()
     # context = ('cert.pem','key.pem') # if you use your own cert, uncomment
     context = 'adhoc' # only for testing. 
-    app.run(ssl_context=context, debug=True)
+    app.run(ssl_context=context, debug=False)
