@@ -78,7 +78,7 @@ def isCommonPwd(pwd) :
     Param: Password to check
     Return: Boolean
     """
-    file = '10k-most-common.txt'
+    file = './10k-most-common.txt'
     assert md5(file) == "0efee504c93d65b37a267005657a7785", "file hash does not match"
     with open(file) as f:
         common_pwd = [line.rstrip() for line in f]
@@ -405,7 +405,8 @@ def resetPwd():
         return render_template("reset_pwd.html")
 
 if __name__ == "__main__":
-    #db.drop_all()
+    db.drop_all() # drops db when server restarts
     db.create_all()
-    context = ('cert.pem','key.pem')
+    # context = ('cert.pem','key.pem') # if you use your own cert, uncomment
+    context = 'adhoc' # only for testing. 
     app.run(ssl_context=context, debug=True)
