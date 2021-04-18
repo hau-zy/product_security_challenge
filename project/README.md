@@ -49,12 +49,16 @@
     - Implemented with `flask_wtf.csrf`. 
 - [X] Multi-factor authentication
     - Two-factor authentication is implemented by using a Time-based One Time Password [(TOTP)](https://en.wikipedia.org/wiki/Time-based_One-Time_Password), with the token being provided using Google Authenticator (or any free TOTP service). Acknowledgment : Referencing [Miguel Grinber's blog](https://blog.miguelgrinberg.com/post/two-factor-authentication-with-flask)
+    - An improvement would be to provide user the option to re-generate new OTP secret (the seed for OTP generation).
 - [X] Password reset / forget password mechanism
-    - Password reset functionality is implemented with user providing OTP, using a two-factor authentication to prevent as a way of verifying that the User initated the password change. (It would be better if there is a notification to user, informing them about such change request.)
+    - Password reset functionality is implemented 
+        - Forget Password: Password can be resetted with user providing OTP, using a two-factor authentication to prevent as a way of verifying that the User initated the password change. (It would be better if there is a notification to user, informing them about such change request.)
+        - Reset Password From Dashboard: The user has to be logged in (together with 2FA in the process) to access reset password page. Old password has to be provided.
 - [X] Account lockout
     - Account is locked out for 5min after 5 wrong password attempts.
 - [X] Cookie
     - JSON Web Tokens (JWT) stored as `auth` cookie. Prevents tampering with token signing. Replay attack can also be mitigated by setting expiry.
+    - JWT is revoked after a user logs out of a session.
 - [x] HTTPS
     - Self-signed certificate is used. 
     - Added option to use `ssl_context=adhoc`. Not recommended.
