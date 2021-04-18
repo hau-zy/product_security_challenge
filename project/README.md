@@ -1,18 +1,33 @@
 ## Setup
+0. Clone the Repository
+    - run `git clone https://github.com/hau-zy/product_security_challenge.git`
+
 1. Activate Virtual Environment
-- `source env/bin/activate`
+        - run `source env/bin/activate`
 
 2. Set up `.env` environment variables
-- run `cp .env_sample .env` and edit the environment variables in `.env` file.
+    - run `cp .env_sample .env` and edit the environment variables in `.env` file.
 
 3. Generate SSL certs (you need to have openssl installed)
-- `openssl req -x509 -newkey rsa:4096 -nodes -out cert.pem -keyout key.pem -days 365`
+    - run `openssl req -x509 -newkey rsa:4096 -nodes -out cert.pem -keyout key.pem -days 365`
 
-4. Run Flask Server
-- `python3 server.py`
+4. Run Flask Server from Command Line
+    - run `python3 server.py`
 
 5. Web App
+    - From browser visit `https://localhost:5000`. You will need to allow self-signed certificate.
+    - The database is empty and you would be required to sign up for an account first!
+
+6. Generating Binary
+    - run `pyinstaller -F --add-data "static:static" --add-data ".env:." --add-data "templates:templates" --add-data "10k-most-common.txt:." server.py`
+    - binary file `server` would be in the `dist` folder
+
+## Using Provided Binary
+1. Run Binary `server.exe`
+
+2. Web App
 - From browser visit `https://localhost:5000`. You will need to allow self-signed certificate.
+
     
 ## Functionalities
 - [x] Input sanitization and validation
@@ -33,6 +48,7 @@
 - [X] Cookie
     - JSON Web Tokens (JWT) stored as `auth` cookie. Prevents tampering with token signing. Replay attack can also be mitigated by setting expiry.
 - [x] HTTPS
-    - Self-signed certificate is used.
+    - Self-signed certificate is used. 
+    - Added option to use `ssl_context=adhoc`. Not recommended.
 - [x] Known password check
     - Passwords are checked against Top 10000 password from [SecList](https://github.com/danielmiessler/SecLists/blob/master/Passwords/Common-Credentials/10k-most-common.txt) before they are accepted as account password.
