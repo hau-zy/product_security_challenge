@@ -623,8 +623,8 @@ def verify():
         
 
 if __name__ == "__main__":
-    #db.drop_all() # drops db when server restarts
+    db.drop_all() # drops all tables when server restarts
     db.create_all()
-    # context = ('cert.pem','key.pem') # if you use your own cert, uncomment
-    context = 'adhoc' # only for testing. 
-    app.run(ssl_context=context, debug=True)
+    context = ('cert.pem','key.pem') # if you use your own cert, uncomment this line and remove "context = 'adhoc'" line (next line) 
+    # context = 'adhoc' # only for testing. 
+    app.run(ssl_context=context, debug=False)
