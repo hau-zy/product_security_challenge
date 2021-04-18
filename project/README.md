@@ -3,7 +3,8 @@
     - run `git clone https://github.com/hau-zy/product_security_challenge.git`
 
 1. Activate Virtual Environment
-        - run `source env/bin/activate`
+    - change directory to project folder `cd project`
+    - run `source env/bin/activate`
 
 2. Set up `.env` environment variables
     - run `cp .env_sample .env` and edit the environment variables in `.env` file.
