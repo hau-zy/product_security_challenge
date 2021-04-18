@@ -53,6 +53,7 @@ class RevokedTokens(db.Model) :
 def md5(fname):
     """
     Helper function to get md5 hash checksum of a file
+    Param: filename to generate md5 hash checksum
     Return: String
     """
     hash_md5 = hashlib.md5()
@@ -74,10 +75,11 @@ def isUsernameSafe(username) :
 def isCommonPwd(pwd) :
     """
     Helper function to check for common password from a txt file
-    Returns : Boolean
+    Param: Password to check
+    Return: Boolean
     """
     file = '10k-most-common.txt'
-    assert md5(file), "0efee504c93d65b37a267005657a7785"
+    assert md5(file) == "0efee504c93d65b37a267005657a7785", "file hash does not match"
     with open(file) as f:
         common_pwd = [line.rstrip() for line in f]
     if pwd in common_pwd :
@@ -90,7 +92,8 @@ def pwdCheck(pwd):
     """
     Helper function to check for validity of a password provided before it is accepted
     to be use for the account.
-    Returns : Dictionary of key-value boolean pairs of the check result
+    Param: Password to check
+    Return: Dictionary of key-value boolean pairs of the check result
     """
     # common password check 
     common_pwd = isCommonPwd(pwd)
@@ -108,7 +111,7 @@ def pwdCheck(pwd):
     lowercase_error = re.search(r"[a-z]", pwd) is None
 
     # searching for symbols
-    symbol_error = re.search(r"[ !#$%&'()*+,-./[\\\]^_`{|}~"+r'"]', pwd) is None
+    symbol_error = re.search(r"[ @!#$%&'()*+,-./[\\\]^_`{|}~"+r'"]', pwd) is None
 
     # overall result
     password_ok = not ( common_pwd or length_error or digit_error or uppercase_error or lowercase_error or symbol_error )
@@ -126,7 +129,8 @@ def pwdCheck(pwd):
 def encode_auth_token(user_id):
     """
     Generates the Auth Token
-    :return: string
+    Param: user_id 
+    Return : string
     """
     jwt_secret = os.environ.get("JWT_SECRET_KEY")
 
@@ -148,8 +152,8 @@ def encode_auth_token(user_id):
 def decode_auth_token(auth_token):
     """
     Decodes the auth token
-    :param auth_token:
-    :return: integer|string
+    Param: auth_token
+    Return: integer|string
     """
     jwt_secret = os.environ.get("JWT_SECRET_KEY")
 
