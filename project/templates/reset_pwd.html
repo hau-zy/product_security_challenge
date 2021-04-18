@@ -9,31 +9,31 @@ Reset Password
 {% endblock %}
 
 {% block content %}
+{% with messages = get_flashed_messages(category_filter=['success']) %}
+{% if messages %}
+<div class="alert alert-success" role="alert">
+    {{ messages[0] }}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+{% endif %}
+{% endwith %}
+{% with messages = get_flashed_messages(category_filter=['error']) %}
+{% if messages %}
+<div class="alert alert-danger" role="alert">
+    {{ messages[0] }}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+{% endif %}
+{% endwith %}
 <div class="login-form">
-    {% with messages = get_flashed_messages(category_filter=['success']) %}
-    {% if messages %}
-    <div class="alert alert-success" role="alert">
-        {{ messages[0] }}
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-        </button>
-    </div>
-    {% endif %}
-    {% endwith %}
-    {% with messages = get_flashed_messages(category_filter=['error']) %}
-    {% if messages %}
-    <div class="alert alert-danger" role="alert">
-        {{ messages[0] }}
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-        </button>
-    </div>
-    {% endif %}
-    {% endwith %}
     <form action="" method="post">
         <h2 class="text-center">Reset Password</h2>
         <div class="form-group">
-            <input type="text" name="username" class="form-control" placeholder="Username" required="required">
+            <p><bold>Reset Password for: {{g.user['username']}}</bold></p>
         </div>
         <div class="form-group">
             <input type="password" name="password0" class="form-control" placeholder="Old Password" required="required">
@@ -49,6 +49,6 @@ Reset Password
         </div>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     </form>
-    <p class="text-center"><a href="/">Login Page</a></p>
+    <p class="text-center"><a href="/dashboard">Dashboard</a></p>
 </div>
 {% endblock %}

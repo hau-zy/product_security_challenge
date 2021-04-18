@@ -1,4 +1,4 @@
-import os, re, bcrypt, logging, jwt , random, hashlib
+import os, re, bcrypt, logging, jwt , random, hashlib, base64, onetimepass, pyqrcode
 from dotenv import load_dotenv
 from os.path import join, dirname
 from flask import Flask, redirect, url_for, render_template, request, flash, make_response, jsonify, g
@@ -6,6 +6,7 @@ from flask_wtf.csrf import CSRFProtect
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 from time import sleep
+from io import BytesIO
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
@@ -31,14 +32,28 @@ class Users(db.Model):
     login_tries = db.Column(db.Integer)
     last_login = db.Column(db.Integer)
     lock_time = db.Column(db.Integer)
+    MFA= db.Column(db.Integer)
+    otp_secret = db.Column(db.String(16))
+    verified_time = db.Column(db.Integer)
 
-    def __init__(self, username, password, salt, login_tries, last_login, lock_time):
+    def __init__(self, username, password, salt, login_tries, last_login, lock_time, verified_time):
         self.username = username
         self.password = password
         self.salt = salt
         self.login_tries = login_tries
         self.last_login = last_login
         self.lock_time = lock_time
+        self.verified_time = verified_time
+        self.MFA=0
+        if self.otp_secret is None:
+            # generate a random secret
+            self.otp_secret = base64.b32encode(os.urandom(10)).decode('utf-8')
+    
+    def get_totp_uri(self):
+        return 'otpauth://totp/2FA-Zendesk-Auth-Demo:{0}?secret={1}&issuer=2FA-Demo'.format(self.username, self.otp_secret)
+
+    def verify_totp(self, token):
+        return onetimepass.valid_totp(token, self.otp_secret)
 
 class RevokedTokens(db.Model) :
     """ Model for Revoked JWTs """
@@ -196,7 +211,7 @@ def login():
 
                 # check if account is locked out 
                 if user.login_tries > 5  and current_time - user.lock_time < (5*60) :
-                    flash('User Account is Locked Out for ' + str(user.lock_time + (5*60) - current_time) + ' sec', "error")
+                    flash('User Account is Locked Out For ' + str(user.lock_time + (5*60) - current_time) + ' sec', "error")
                     return redirect(url_for("login"))
                 
                 # check password provided vs stored
@@ -205,7 +220,7 @@ def login():
                     # wrong password provided
                     user.login_tries += 1
                     if user.login_tries == 5 :
-                        flash('Account Locked For 5min', "error")
+                        flash('Account Locked For 5 min', "error")
                         app.logger.warning("[login]Account for : " + user.username)
                         user.lock_time = int(datetime.now().timestamp())
                         db.session.commit()
@@ -228,7 +243,6 @@ def login():
                             db.session.commit()
                             response = make_response(redirect(url_for("dashboard")))
                             response.set_cookie('auth', auth_token, httponly=True, secure=True)
-                            flash("Successfully Logged In", "success")
                             return response
                     except Exception as e:
                             print(e)
@@ -275,7 +289,7 @@ def signUp():
 
             # passwords should match
             if password1 != password2 :
-                flash("Passwords do not matchh", "error")
+                flash("Passwords do not match", "error")
                 return redirect(url_for("signUp"))
             
             # password check
@@ -283,7 +297,7 @@ def signUp():
             if res['password_ok'] :
                 salt = bcrypt.gensalt(rounds=16)
                 hashed_password = bcrypt.hashpw(password1.encode(), salt)
-                new_user = Users(username, hashed_password, salt, 0, 0, 0)
+                new_user = Users(username, hashed_password, salt, 0, 0, 0, 0)
                 db.session.add(new_user)
                 db.session.commit()
                 flash("Your account is successfully created!", "success")
@@ -312,8 +326,25 @@ def dashboard():
     else:
         res = decode_auth_token(auth_token)
         if isinstance(res, int) :
-            g.user = Users.query.filter_by(id=res).first()
-            return render_template("dashboard.html")
+            user = Users.query.filter_by(id=res).first()
+            if user:
+                if user.MFA == 0 :
+                    return redirect(url_for("twoFactorSetup"))
+                else :
+                    current_time = int(datetime.now().timestamp())
+                    # check that the user has been verified with 2FA recently
+                    if current_time - user.verified_time < (15*60):
+                        g.user = user
+                        flash("Successfully Logged In", "success")
+                        return render_template("dashboard.html")
+                    else:
+                        g.user = user
+                        flash("Please verify OTP Token", "success")
+                        return redirect(url_for("verify"))
+            else :
+                g.user = None
+                flash("Error", "error")
+                return redirect(url_for("login"))
         else :
             g.user = None
             flash(res, "error")
@@ -324,14 +355,15 @@ End-point that handles logout logic
 """
 @app.route("/logout", methods=["GET"])
 def logout():
-    #print("logout")
-    auth_token = request.cookies.get('auth').strip()
-    #print(auth_token)
+    auth_token = request.cookies.get('auth')
     if auth_token is None or RevokedTokens.query.filter_by(revoked_token=auth_token).first():
         flash("Please log in", "error")
         return redirect(url_for("login"))
     else:
         new_revoke = RevokedTokens(auth_token, int(datetime.now().timestamp()))
+        res = decode_auth_token(auth_token)
+        user = Users.query.filter_by(id=res).first() 
+        user.verified_time = 0
         db.session.add(new_revoke)
         db.session.commit()
         flash("Successfully Logged Out", "success")
@@ -342,28 +374,28 @@ Reset Password Page
 """
 @app.route("/reset_pwd", methods=["POST", "GET"])
 def resetPwd():
-    if request.method == "POST":
-            username = request.form.get("username")
-            old_pass = request.form.get("password0")
-            password1 = request.form.get("password1")
-            password2 = request.form.get("password2")
-            # check safe username
-            if isUsernameSafe(username) :
-                # perform user check on db
-                user = Users.query.filter_by(username=username).first() 
-                if user :
-                    # check if account is locked out 
-                    if user.login_tries > 5  and current_time - user.lock_time < (5*60) :
-                        flash('[pwd_reset]User Account is Locked Out for ' + str(user.lock_time + (5*60) - current_time) + ' sec', "error")
-                        return redirect(url_for("resetPwd"))
-                    
+    auth_token = request.cookies.get('auth')
+    if auth_token is None or RevokedTokens.query.filter_by(revoked_token=auth_token).first():
+            g.user = None
+            flash("Please log in", "error")
+            return redirect(url_for("login"))
+    else:
+        res = decode_auth_token(auth_token)
+        if isinstance(res, int) :
+            user = Users.query.filter_by(id=res).first()
+            g.user = user
+            if user :
+                if request.method == "POST":
+                    old_pass = request.form.get("password0")
+                    password1 = request.form.get("password1")
+                    password2 = request.form.get("password2")
                     # check password provided vs stored
                     hash_prov_passwd = bcrypt.hashpw(old_pass.encode(), user.salt)
                     if not hash_prov_passwd == user.password :
                         # wrong password provided
                         user.login_tries += 1
                         if user.login_tries == 5 :
-                            flash('Account Locked For 5min', "error")
+                            flash('Account Locked For 5 min', "error")
                             user.lock_time = int(datetime.now().timestamp())
                             db.session.commit()
                             sleep(random.uniform(0, 0.5))
@@ -379,9 +411,70 @@ def resetPwd():
                         user.login_tries = 0
                         # passwords should match
                         if password1 != password2 :
-                            flash("Passwords do not matchh", "error")
+                            flash("Passwords do not match", "error")
                             return redirect(url_for("resetPwd"))
-                        
+                                    
+                        # password check
+                        res = pwdCheck(password1)
+                        if res['password_ok'] :
+                            salt = bcrypt.gensalt(rounds=16)
+                            hashed_password = bcrypt.hashpw(password1.encode(), salt)
+                            user.salt = salt
+                            user.password = hashed_password
+                            db.session.commit()
+                            auth_token = request.cookies.get('auth')
+                            if auth_token is not None :
+                                new_revoke = RevokedTokens(auth_token, int(datetime.now().timestamp()))
+                                db.session.add(new_revoke)
+                                db.session.commit()
+                                flash("Your password is successfully resetted! Please log in again.", "success")
+                                app.logger.warning("Password reset successful for : " + user.username)
+                                return redirect(url_for("login"))
+                        else :
+                            if res['common_pwd'] :
+                                flash('Password chosen is too common, please use something more difficult to guess!', "error")
+                                return redirect(url_for("resetPwd"))
+                            else:
+                                flash('Password must be between 8 to 64 characters with at least 1 Digit, 1 Upper Case Alphabet, 1 Lower Case Alphabet and 1 Special Character' , "error")
+                                return redirect(url_for("resetPwd"))     
+                else :
+                    g.user = user
+                    return render_template("reset_pwd.html")
+            else :
+                #no such user
+                flash("Please log in again", "error")
+                app.logger.warning("[pwd_reset] Wrong id provided: " + res)
+                return redirect(url_for("login"))
+        else :
+            g.user = None
+            flash(res, "error")
+            return redirect(url_for("login"))
+
+"""
+Forget Password Page
+"""
+@app.route("/forget_pwd", methods=["POST", "GET"])
+def forgetPwd():
+    if request.method == "POST":
+            username = request.form.get("username")
+            password1 = request.form.get("password1")
+            password2 = request.form.get("password2")
+            token = request.form.get("OTP")
+            # check safe username
+            if isUsernameSafe(username) :
+                # perform user check on db
+                user = Users.query.filter_by(username=username).first() 
+                if user :
+                    # check OTP
+                    if not user.verify_totp(token) :
+                        flash("Token Error", "error")
+                        return redirect(url_for("resetPwd"))
+                    else:
+                        # passwords should match
+                        if password1 != password2 :
+                            flash("Passwords do not match", "error")
+                            return redirect(url_for("resetPwd"))
+
                         # password check
                         res = pwdCheck(password1)
                         if res['password_ok'] :
@@ -396,32 +489,142 @@ def resetPwd():
                                 db.session.add(new_revoke)
                                 db.session.commit()
                             flash("Your password is successfully resetted! Please log in again.", "success")
-                            app.logger.warning("Password reset successful for : " + user.username)
+                            app.logger.warning("[forget_pwd]Password reset successful for : " + user.username)
                             return redirect(url_for("login"))
                         else :
                             if res['common_pwd'] :
                                 flash('Password chosen is too common, please use something more difficult to guess!', "error")
                             else:
                                 flash('Password must be between 8 to 64 characters with at least 1 Digit, 1 Upper Case Alphabet, 1 Lower Case Alphabet and 1 Special Character' , "error")
-                            return render_template("reset.html")
+                            return redirect(url_for("forgetPwd"))
                 else :
                     #no such user
                     flash("Please try again", "error")
-                    app.logger.warning("[pwd_reset]User does not exist : " + username)
+                    app.logger.warning("[forget_pwd]User does not exist : " + username)
                     sleep(random.uniform(4, 4.5)) # padded time to take into account hashing time for bcrypt
-                    return redirect(url_for("resetPwd"))
+                    return redirect(url_for("forgetPwd"))
             else :
                 #unsafe username
                 flash("Please try again", "error")
-                app.logger.warning("[pwd_reset]Unsafe username provided : " + username)
+                app.logger.warning("[forget_pwd]Unsafe username provided : " + username)
                 sleep(random.uniform(4, 4.5)) # padded time to take into account hashing time for bcrypt
-                return redirect(url_for("resetPwd"))
+                return redirect(url_for("forgetPwd"))
     else:
-        return render_template("reset_pwd.html")
+        return render_template("forget_pwd.html")
+
+"""
+2FA Setup Page
+"""
+@app.route('/2FA_setup', methods=["GET"])
+def twoFactorSetup():
+    auth_token = request.cookies.get('auth')
+    if auth_token is None or RevokedTokens.query.filter_by(revoked_token=auth_token).first():
+        g.user = None
+        flash("Please log in", "error")
+        return redirect(url_for("login"))
+    else:
+        res = decode_auth_token(auth_token)
+        if isinstance(res, int) :
+            user = Users.query.filter_by(id=res).first()
+            g.user = user
+            if user :
+                user.MFA =1
+                db.session.commit()
+                return render_template('2FA_setup.html')
+            else:
+                g.user = None
+                flash("Error!", "error")
+                return redirect(url_for("login"))
+        else :
+            g.user = None
+            flash("Error!", "error")
+            return redirect(url_for("login"))
+
+"""
+End-point to provide QR code
+"""
+@app.route('/qrcode', methods=["GET"])
+def qrcode():
+    auth_token = request.cookies.get('auth')
+    if auth_token is None or RevokedTokens.query.filter_by(revoked_token=auth_token).first():
+        g.user = None
+        flash("Please log in", "error")
+        return redirect(url_for("login"))
+    else:
+        res = decode_auth_token(auth_token)
+        if isinstance(res, int) :
+            user = Users.query.filter_by(id=res).first()
+            if user :
+                g.user = user
+                # render qrcode for TOTP
+                url = pyqrcode.create(user.get_totp_uri())
+                stream = BytesIO()
+                url.svg(stream, scale=5)
+                return stream.getvalue(), {'Content-Type': 'image/svg+xml'}
+            else :
+                g.user = None
+                flash("Error!", "error")
+                return redirect(url_for("login"))
+        else :
+            g.user = None
+            flash(res, "error")
+            return redirect(url_for("login"))
+
+"""
+OTP Verify page
+"""
+@app.route('/verify', methods=["POST","GET"])
+def verify():
+    if request.method == "POST":
+        auth_token = request.cookies.get('auth')
+        if auth_token is None or RevokedTokens.query.filter_by(revoked_token=auth_token).first():
+            g.user = None
+            flash("Please log in", "error")
+            return redirect(url_for("login"))
+        else:
+            res = decode_auth_token(auth_token)
+            if isinstance(res, int) :
+                user = Users.query.filter_by(id=res).first()
+                g.user = user
+                if user :
+                    token = request.form.get("OTP")
+                    if user.verify_totp(token) :
+                        user.verified_time = int(datetime.now().timestamp())
+                        db.session.commit()
+                        flash("Successfully Logged In", "success")
+                        return redirect(url_for("dashboard"))
+                    else :
+                        flash("Invalid OTP Token!", "error")
+                        return redirect(url_for("login"))
+                else :
+                    g.user = None
+                    flash("Error!", "error")
+                    return redirect(url_for("login"))
+            else :
+                g.user = None
+                flash(res, "error")
+                return redirect(url_for("login"))
+    else :
+        auth_token = request.cookies.get('auth')
+        if auth_token is None or RevokedTokens.query.filter_by(revoked_token=auth_token).first():
+            g.user = None
+            flash("Please log in", "error")
+            return redirect(url_for("login"))
+        else:
+            res = decode_auth_token(auth_token)
+            if isinstance(res, int) :
+                user = Users.query.filter_by(id=res).first()
+                g.user = user
+                return render_template('verify.html')
+            else :
+                g.user = None
+                flash(res, "error")
+                return redirect(url_for("login"))
+        
 
 if __name__ == "__main__":
-    db.drop_all() # drops db when server restarts
+    #db.drop_all() # drops db when server restarts
     db.create_all()
     # context = ('cert.pem','key.pem') # if you use your own cert, uncomment
     context = 'adhoc' # only for testing. 
-    app.run(ssl_context=context, debug=False)
+    app.run(ssl_context=context, debug=True)

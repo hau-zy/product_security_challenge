@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-Login Form
+Forget Password (Reset)
 {% endblock %}
 
 {% block head %}
@@ -28,25 +28,27 @@ Login Form
         </button>
     </div>
     {% endif %}
-{% endwith %}
+    {% endwith %}
 <div class="login-form">
     <form action="" method="post">
-        <h2 class="text-center">Log In</h2>
+        <h2 class="text-center">Forget Password (Reset)</h2>
         <div class="form-group">
             <input type="text" name="username" class="form-control" placeholder="Username" required="required">
         </div>
         <div class="form-group">
-            <input type="password" name="password" class="form-control" placeholder="Password" required="required">
+            <input type="password" name="password1" class="form-control" placeholder="New Password" required="required">
         </div>
         <div class="form-group">
-            <button type="submit" class="btn btn-primary btn-block">Log in</button>
+            <input type="password" name="password2" class="form-control" placeholder="Confirm New Password" required="required">
         </div>
-        <div class="clearfix">
-            <label class="pull-left checkbox-inline"><input type="checkbox"> Remember me</label>
-            <a href="/forget_pwd" class="pull-right">Forgot Password?</a>
+        <div class="form-group">
+            <input type="text" name="OTP" class="form-control" placeholder="OTP" required="required">
         </div>
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary btn-block">Change Password</button>
+        </div>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     </form>
-    <p class="text-center"><a href="/create_acc">Create an Account</a></p>
+    <p class="text-center"><a href="/">Login Page</a></p>
 </div>
 {% endblock %}

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-Dashboard
+2FA Setup
 {% endblock %}
 
 {% block head %}
@@ -29,11 +29,11 @@ Dashboard
     </div>
     {% endif %}
 {% endwith %}
-<div class="dashboard">
-    <h1>Welcome {{g.user['username']}} 👋 </h1>
-    <p>Hello! Welcome to the demo! 🤓 @hau-zy</p>
-    <p class="text-center"><a href="/2FA_setup">2FA Setup</a></p>
-    <p class="text-center"><a href="/reset_pwd">Reset Password</a></p>
-    <p class="text-center"><a href="/logout">Logout</a></p>
+<div>
+    <h1>Two Factor Authentication Setup</h1>
+    <h3>Hi {{g.user['username']}},</h3>
+    <p>You are almost done! Please start Google Authenticator on your smartphone and scan the following QR Code 📱 </p>
+    <p><img id="qrcode" src="{{ url_for('qrcode') }}"></p>
+    <p>I'm done, take me to the <a href="{{ url_for('verify') }}">Verify OTP</a> page!</p>
 </div>
 {% endblock %}

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-Dashboard
+Verify OTP Token
 {% endblock %}
 
 {% block head %}
@@ -29,11 +29,20 @@ Dashboard
     </div>
     {% endif %}
 {% endwith %}
-<div class="dashboard">
-    <h1>Welcome {{g.user['username']}} 👋 </h1>
-    <p>Hello! Welcome to the demo! 🤓 @hau-zy</p>
-    <p class="text-center"><a href="/2FA_setup">2FA Setup</a></p>
-    <p class="text-center"><a href="/reset_pwd">Reset Password</a></p>
-    <p class="text-center"><a href="/logout">Logout</a></p>
+<div class="login-form">
+    <form action="" method="post">
+        <h2 class="text-center">Verify OTP Token</h2>
+        <div class="form-group">
+            <p>Please use your Google Authenticator to obtain OTP Token 📱 </p>
+            <p><bold>Verify OTP Token for: {{g.user['username']}}</bold></p>
+        </div>
+        <div class="form-group">
+            <input type="text" name="OTP" class="form-control" placeholder="OTP Token" required="required">
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary btn-block">Verify</button>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    </form>
+    <p class="text-center"><a href="/">Login</a></p>
 </div>
 {% endblock %}
