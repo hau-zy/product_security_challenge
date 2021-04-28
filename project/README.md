@@ -60,6 +60,7 @@
 - [X] Cookie
     - JSON Web Tokens (JWT) stored as `auth` cookie. Prevents tampering with token signing. Replay attack can also be mitigated by setting expiry.
     - JWT is revoked after a user logs out of a session.
+    - Improvement (TODO) : implement auth and refresh token system
 - [x] HTTPS
     - Self-signed certificate is used. 
     - Added option to use `ssl_context=adhoc`. Not recommended.
